@@ -1,0 +1,50 @@
+/* Reset y Base */
+body { font-family: 'Segoe UI', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+.container { max-width: 800px; margin: 0 auto; }
+
+/* Header */
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+h1 { color: #2c3e50; margin: 0; font-size: 1.5rem; }
+
+/* Botones */
+.btn-warning { background-color: #ffc107; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; color: #333; transition: background 0.3s; }
+.btn-warning:hover { background-color: #e0a800; }
+
+/* Cards Generales */
+.card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+h2 { margin-top: 0; font-size: 1.1rem; border-bottom: 2px solid #eee; padding-bottom: 10px; color: #555; }
+
+/* Grid de información */
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.item { font-size: 0.9rem; }
+.link-text { color: #007bff; word-break: break-all; }
+
+/* Badges de Estado */
+.badge { padding: 4px 8px; border-radius: 4px; color: white; font-size: 0.85rem; font-weight: bold; }
+.badge.success { background-color: #28a745; }
+.badge.danger { background-color: #dc3545; }
+.badge.warning { background-color: #ffc107; color: #333; }
+
+/* TERMINAL DE LOGS */
+.terminal-container h3 { font-size: 0.9rem; color: #666; margin-bottom: 5px; }
+.terminal-box { 
+    background-color: #1e1e1e; 
+    color: #00ff00; 
+    font-family: 'Courier New', monospace; 
+    padding: 15px; 
+    border-radius: 8px; 
+    height: 200px; 
+    overflow-y: scroll; /* Scroll automático */
+    font-size: 0.85rem;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+}
+.log-line { margin-bottom: 4px; border-bottom: 1px solid #333; padding-bottom: 2px;}
+.log-time { color: #888; margin-right: 10px; }
+
+/* MODAL DE ERRORES */
+.modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+.modal-content { background-color: #fff; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+.close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+.close:hover { color: black; }
+.error-box { max-height: 300px; overflow-y: auto; margin-top: 15px; }
+.error-line { background: #ffe6e6; color: #b71c1c; padding: 8px; margin-bottom: 5px; border-left: 4px solid #b71c1c; font-size: 0.9rem; }

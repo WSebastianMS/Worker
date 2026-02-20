@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Worker Node Monitor 🟢</h1>
+            <button id="btnErrors" class="btn-warning" onclick="toggleModal()">
+                ⚠️ Errores (<span id="errorCount">0</span>)
+            </button>
+        </header>
+
+        <section class="card">
+            <h2>Información Local</h2>
+            <div class="info-grid">
+                <div class="item"><strong>ID:</strong> <span id="w-id">Cargando...</span></div>
+                <div class="item"><strong>Puerto:</strong> <span id="w-port">...</span></div>
+                <div class="item"><strong>URL Pública:</strong> <span id="w-url" class="link-text">...</span></div>
+                <div class="item"><strong>Timestamp:</strong> <span id="timestamp">...</span></div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Estado del Coordinador</h2>
+            <div class="info-grid">
+                <div class="item">
+                    <strong>URL Coordinador:</strong> 
+                    <span id="c-url" class="link-text">...</span>
+                </div>
+                <div class="item">
+                    <strong>Estado Conexión:</strong> 
+                    <span id="c-status" class="badge">Esperando...</span>
+                </div>
+                <div class="item">
+                    <strong>Último Heartbeat:</strong> 
+                    <span id="c-last">Nunca</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="terminal-container">
+            <h3>> Terminal Output</h3>
+            <div id="terminal-logs" class="terminal-box">
+                </div>
+        </section>
+    </div>
+
+    <div id="errorModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="toggleModal()">&times;</span>
+            <h2>⚠️ Historial de Errores</h2>
+            <div id="error-list" class="error-box">
+                <p>No hay errores registrados.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Lógica de actualización
+        function updateDashboard() {
+            fetch('/status')
+                .then(res => res.json())
+                .then(data => {
+                    // Worker Info
+                    document.getElementById('w-id').textContent = data.worker_id;
+                    document.getElementById('w-port').textContent = data.port;
+                    document.getElementById('w-url').textContent = data.public_url;
+                    document.getElementById('timestamp').textContent = new Date(data.current_timestamp).toLocaleString();
+
+                    // Coordinator Info
+                    document.getElementById('c-url').textContent = data.coordinator.url;
+                    
+                    const cStatus = document.getElementById('c-status');
+                    cStatus.textContent = data.coordinator.status;
+                    cStatus.className = 'badge ' + (data.coordinator.status === 'Conectado' ? 'success' : 'danger');
+
+                    if(data.coordinator.last_heartbeat_sent) {
+                        document.getElementById('c-last').textContent = new Date(data.coordinator.last_heartbeat_sent).toLocaleTimeString();
+                    }
+
+                    // Logs (Terminal)
+                    const logsDiv = document.getElementById('terminal-logs');
+                    logsDiv.innerHTML = data.logs.map(log => 
+                        `<div class="log-line"><span class="log-time">[${log.timestamp}]</span> ${log.message}</div>`
+                    ).join('');
+
+                    // Errores (Modal)
+                    const errorCount = document.getElementById('errorCount');
+                    errorCount.textContent = data.errors.length;
+                    
+                    const errorList = document.getElementById('error-list');
+                    if(data.errors.length > 0) {
+                        errorList.innerHTML = data.errors.map(err => 
+                            `<div class="error-line"><strong>${err.timestamp}:</strong> ${err.message}</div>`
+                        ).join('');
+                    }
+                })
+                .catch(err => console.error("Error conectando con worker backend"));
+        }
+
+        // Control del Modal
+        function toggleModal() {
+            const modal = document.getElementById('errorModal');
+            modal.style.display = modal.style.display === "block" ? "none" : "block";
+        }
+
+        // Actualizar cada segundo
+        setInterval(updateDashboard, 1000);
+        updateDashboard();
+    </script>
+</body>
+</html>
