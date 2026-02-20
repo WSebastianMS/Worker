@@ -6,7 +6,7 @@ const path = require("path");
 const app = express();
 const PORT = process.argv[2] || 3001;
 
-// --- ESTADO DEL WORKER ---
+
 const id = crypto.randomUUID();
 let COORDINATOR_URL = null;
 let PUBLIC_URL = null;
@@ -19,7 +19,7 @@ let workerState = {
     lastHeartbeat: null
 };
 
-// --- LOGS EN MEMORIA ---
+
 const systemLogs = [];
 const errorLogs = [];
 
@@ -43,7 +43,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- LÓGICA DE NEGOCIO ---
+
 async function register() {
     if (!COORDINATOR_URL) return;
     
@@ -109,8 +109,6 @@ async function sendPulse() {
     }
 }
 
-// --- ENDPOINTS API ---
-
 app.post("/connect", async (req, res) => {
     const { coordinatorUrl, publicUrl } = req.body;
     if (!coordinatorUrl || !publicUrl) return res.status(400).json({ error: "Faltan URLs" });
@@ -137,15 +135,14 @@ app.post("/disconnect", (req, res) => {
 
 app.get("/status", (req, res) => {
     res.json({
-        // Datos planos para facilitar acceso
+
         id,
         port: PORT,
         public_url: PUBLIC_URL,
         coordinator_url: COORDINATOR_URL,
-        pulse_interval: PULSE_INTERVAL,    // <--- Esto arregla el "undefined ms"
-        current_timestamp: Date.now(),     // <--- Esto arregla el "Invalid Date"
+        pulse_interval: PULSE_INTERVAL,  
+        current_timestamp: Date.now(),
         
-        // Objetos complejos
         state: workerState,
         logs: systemLogs,
         errors: errorLogs
