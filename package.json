@@ -3,5 +3,25 @@
     "cors": "^2.8.6",
     "crypto": "^1.0.1",
     "express": "^5.2.1"
-  }
+  },
+  "name": "tabajador",
+  "version": "1.0.0",
+  "description": "Este proyecto implementa el componente **Worker** de un sistema distribuido. El worker se encarga de reportar su estado (\"heartbeat\") periódicamente a un servidor **Coordinador** central.",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WSebastianMS/Worker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/WSebastianMS/Worker/issues"
+  },
+  "homepage": "https://github.com/WSebastianMS/Worker#readme"
 }
