@@ -10,44 +10,90 @@
 
     <div class="container">
         <header>
-            <h1>Worker Node Monitor 🟢</h1>
+            <h1>Worker Node Console 🟢</h1>
             <button id="btnErrors" class="btn-warning" onclick="toggleModal()">
                 ⚠️ Errores (<span id="errorCount">0</span>)
             </button>
         </header>
 
-        <section class="card">
-            <h2>Información Local</h2>
-            <div class="info-grid">
-                <div class="item"><strong>ID:</strong> <span id="w-id">Cargando...</span></div>
-                <div class="item"><strong>Puerto:</strong> <span id="w-port">...</span></div>
-                <div class="item"><strong>URL Pública:</strong> <span id="w-url" class="link-text">...</span></div>
-                <div class="item"><strong>Timestamp:</strong> <span id="timestamp">...</span></div>
+        <section class="card config-panel">
+            <h2>⚙️ Configuración de Conexión</h2>
+            <div id="connection-form">
+                <div class="input-group">
+                    <label>URL Coordinador:</label>
+                    <input type="text" id="input-coord" placeholder="Ej: https://coord.ngrok.app">
+                </div>
+                <div class="input-group">
+                    <label>Tu URL Pública (Ngrok):</label>
+                    <input type="text" id="input-public" placeholder="Ej: https://mi-worker.ngrok.app">
+                </div>
+                <button class="btn-primary" onclick="connectWorker()">🔗 Conectar</button>
+            </div>
+            
+            <div id="connection-active" style="display: none;">
+                <p>Sistema operando correctamente.</p>
+                <button class="btn-danger" onclick="disconnectWorker()">🛑 Desconectar / Reconfigurar</button>
             </div>
         </section>
 
-        <section class="card">
-            <h2>Estado del Coordinador</h2>
-            <div class="info-grid">
-                <div class="item">
-                    <strong>URL Coordinador:</strong> 
-                    <span id="c-url" class="link-text">...</span>
+        <div class="dashboard-grid">
+            
+            <section class="card">
+                <h2>Estado Local (Worker)</h2>
+                <div class="info-grid">
+                    <div class="item">
+                        <strong>ID <span class="tooltip" data-text="Identificador único generado por el sistema.">?</span>:</strong> 
+                        <span id="w-id">...</span>
+                    </div>
+                    <div class="item">
+                        <strong>Puerto <span class="tooltip" data-text="Puerto local donde corre Node.js.">?</span>:</strong> 
+                        <span id="w-port">...</span>
+                    </div>
+                    <div class="item">
+                        <strong>Estado <span class="tooltip" data-text="Indica si se están enviando pulsos.">?</span>:</strong> 
+                        <span id="w-status" class="badge">Detenido</span>
+                    </div>
+                    
+                    <div class="item full-width">
+                        <strong>URL Pública <span class="tooltip" data-text="Dirección de internet visible para el Coordinador.">?</span>:</strong> 
+                        <div id="w-public-url" class="link-text">No configurada</div>
+                    </div>
+
+                    <div class="item">
+                        <strong>Intervalo <span class="tooltip" data-text="Tiempo entre cada señal de vida.">?</span>:</strong> 
+                        <span id="w-interval">...</span>
+                    </div>
+                    <div class="item">
+                        <strong>Timestamp <span class="tooltip" data-text="Hora interna del servidor.">?</span>:</strong> 
+                        <span id="w-timestamp">...</span>
+                    </div>
                 </div>
-                <div class="item">
-                    <strong>Estado Conexión:</strong> 
-                    <span id="c-status" class="badge">Esperando...</span>
+            </section>
+
+            <section class="card">
+                <h2>Coordinador</h2>
+                <div class="info-grid">
+                    <div class="item full-width">
+                        <strong>URL Coordinador <span class="tooltip" data-text="Servidor central al que reportamos.">?</span>:</strong> 
+                        <div id="c-url" class="link-text">No configurada</div>
+                    </div>
+
+                    <div class="item">
+                        <strong>Conexión <span class="tooltip" data-text="Estado de la comunicación con el servidor central.">?</span>:</strong> 
+                        <span id="c-status" class="badge">...</span>
+                    </div>
+                    
+                    <div class="item">
+                        <strong>Último Pulso <span class="tooltip" data-text="Hora del último mensaje enviado con éxito.">?</span>:</strong> 
+                        <span id="c-last">Nunca</span>
+                    </div>
                 </div>
-                <div class="item">
-                    <strong>Último Heartbeat:</strong> 
-                    <span id="c-last">Nunca</span>
-                </div>
-            </div>
-        </section>
+            </section>
+        </div>
 
         <section class="terminal-container">
-            <h3>> Terminal Output</h3>
-            <div id="terminal-logs" class="terminal-box">
-                </div>
+            <h3>> System Logs</h3>
+            <div id="terminal-logs" class="terminal-box"></div>
         </section>
     </div>
 
@@ -55,64 +101,10 @@
         <div class="modal-content">
             <span class="close" onclick="toggleModal()">&times;</span>
             <h2>⚠️ Historial de Errores</h2>
-            <div id="error-list" class="error-box">
-                <p>No hay errores registrados.</p>
-            </div>
+            <div id="error-list" class="error-box"></div>
         </div>
     </div>
 
-    <script>
-        // Lógica de actualización
-        function updateDashboard() {
-            fetch('/status')
-                .then(res => res.json())
-                .then(data => {
-                    // Worker Info
-                    document.getElementById('w-id').textContent = data.worker_id;
-                    document.getElementById('w-port').textContent = data.port;
-                    document.getElementById('w-url').textContent = data.public_url;
-                    document.getElementById('timestamp').textContent = new Date(data.current_timestamp).toLocaleString();
-
-                    // Coordinator Info
-                    document.getElementById('c-url').textContent = data.coordinator.url;
-                    
-                    const cStatus = document.getElementById('c-status');
-                    cStatus.textContent = data.coordinator.status;
-                    cStatus.className = 'badge ' + (data.coordinator.status === 'Conectado' ? 'success' : 'danger');
-
-                    if(data.coordinator.last_heartbeat_sent) {
-                        document.getElementById('c-last').textContent = new Date(data.coordinator.last_heartbeat_sent).toLocaleTimeString();
-                    }
-
-                    // Logs (Terminal)
-                    const logsDiv = document.getElementById('terminal-logs');
-                    logsDiv.innerHTML = data.logs.map(log => 
-                        `<div class="log-line"><span class="log-time">[${log.timestamp}]</span> ${log.message}</div>`
-                    ).join('');
-
-                    // Errores (Modal)
-                    const errorCount = document.getElementById('errorCount');
-                    errorCount.textContent = data.errors.length;
-                    
-                    const errorList = document.getElementById('error-list');
-                    if(data.errors.length > 0) {
-                        errorList.innerHTML = data.errors.map(err => 
-                            `<div class="error-line"><strong>${err.timestamp}:</strong> ${err.message}</div>`
-                        ).join('');
-                    }
-                })
-                .catch(err => console.error("Error conectando con worker backend"));
-        }
-
-        // Control del Modal
-        function toggleModal() {
-            const modal = document.getElementById('errorModal');
-            modal.style.display = modal.style.display === "block" ? "none" : "block";
-        }
-
-        // Actualizar cada segundo
-        setInterval(updateDashboard, 1000);
-        updateDashboard();
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>

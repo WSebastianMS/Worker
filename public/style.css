@@ -6,9 +6,25 @@ body { font-family: 'Segoe UI', sans-serif; background-color: #f4f6f9; margin: 0
 header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 h1 { color: #2c3e50; margin: 0; font-size: 1.5rem; }
 
+/* Inputs tipo Consola */
+.input-group { margin-bottom: 15px; }
+.input-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+.input-group input { 
+    width: 96%; 
+    padding: 10px; 
+    border: 2px solid #ddd; 
+    border-radius: 6px; 
+    font-family: 'Courier New', monospace; 
+    font-size: 1rem;
+}
+.input-group input:focus { border-color: #007bff; outline: none; }
+
 /* Botones */
-.btn-warning { background-color: #ffc107; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; color: #333; transition: background 0.3s; }
-.btn-warning:hover { background-color: #e0a800; }
+button { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: 0.2s; }
+.btn-primary { background-color: #007bff; color: white; width: 100%; }
+.btn-primary:hover { background-color: #0056b3; }
+.btn-danger { background-color: #dc3545; color: white; }
+.btn-warning { background-color: #ffc107; color: #333; }
 
 /* Cards Generales */
 .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
@@ -16,14 +32,19 @@ h2 { margin-top: 0; font-size: 1.1rem; border-bottom: 2px solid #eee; padding-bo
 
 /* Grid de información */
 .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .item { font-size: 0.9rem; }
-.link-text { color: #007bff; word-break: break-all; }
+
+/* Manejo de URLs largas */
+.full-width { grid-column: span 2; border-top: 1px solid #eee; padding-top: 5px; margin-top: 5px; }
+.link-text { font-family: monospace; color: #007bff; word-break: break-all; font-size: 0.85rem; }
+.highlight { color: #007bff; font-family: monospace; }
 
 /* Badges de Estado */
 .badge { padding: 4px 8px; border-radius: 4px; color: white; font-size: 0.85rem; font-weight: bold; }
-.badge.success { background-color: #28a745; }
-.badge.danger { background-color: #dc3545; }
-.badge.warning { background-color: #ffc107; color: #333; }
+.success { background-color: #28a745; }
+.danger { background-color: #dc3545; }
+.warning { background-color: #ffc107; color: #333; }
 
 /* TERMINAL DE LOGS */
 .terminal-container h3 { font-size: 0.9rem; color: #666; margin-bottom: 5px; }
@@ -34,7 +55,7 @@ h2 { margin-top: 0; font-size: 1.1rem; border-bottom: 2px solid #eee; padding-bo
     padding: 15px; 
     border-radius: 8px; 
     height: 200px; 
-    overflow-y: scroll; /* Scroll automático */
+    overflow-y: auto; 
     font-size: 0.85rem;
     box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
 }
@@ -43,8 +64,90 @@ h2 { margin-top: 0; font-size: 1.1rem; border-bottom: 2px solid #eee; padding-bo
 
 /* MODAL DE ERRORES */
 .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-.modal-content { background-color: #fff; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-.close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+.modal-content { 
+    background-color: #fff; 
+    margin: 10% auto; 
+    padding: 20px; 
+    border: 1px solid #888; 
+    width: 80%; 
+    max-width: 500px; 
+    border-radius: 10px; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh; 
+}
+
+.close { color: #aaa; align-self: flex-end; font-size: 28px; font-weight: bold; cursor: pointer; margin-bottom: 10px;}
 .close:hover { color: black; }
-.error-box { max-height: 300px; overflow-y: auto; margin-top: 15px; }
-.error-line { background: #ffe6e6; color: #b71c1c; padding: 8px; margin-bottom: 5px; border-left: 4px solid #b71c1c; font-size: 0.9rem; }
+
+/* CAJA DE ERRORES CON SCROLL */
+.error-box { 
+    max-height: 300px; 
+    overflow-y: auto; 
+    margin-top: 10px; 
+    border: 1px solid #eee;
+    padding: 5px;
+    background: #fafafa;
+    border-radius: 5px;
+}
+.error-line { background: #ffe6e6; color: #b71c1c; padding: 10px; margin-bottom: 8px; border-left: 4px solid #b71c1c; font-size: 0.9rem; border-radius: 3px; }
+
+/* --- TOOLTIPS (NUEVO) --- */
+.tooltip {
+    display: inline-block;
+    background-color: #e9ecef;
+    color: #6c757d;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    text-align: center;
+    font-size: 12px;
+    line-height: 18px;
+    font-weight: bold;
+    cursor: help;
+    margin-left: 5px;
+    position: relative;
+    border: 1px solid #dee2e6;
+}
+.tooltip:hover {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+.tooltip::after {
+    content: attr(data-text);
+    position: absolute;
+    bottom: 135%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: normal;
+    white-space: normal;
+    width: max-content;
+    max-width: 200px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+    pointer-events: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.tooltip::before {
+    content: "";
+    position: absolute;
+    bottom: 90%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s;
+}
+.tooltip:hover::after, .tooltip:hover::before { opacity: 1; visibility: visible; }

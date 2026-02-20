@@ -4,24 +4,22 @@ const crypto = require("crypto");
 const path = require("path");
 
 const app = express();
+const PORT = process.argv[2] || 3001;
 
-// --- CONFIGURACIÓN ---
-const PORT = process.argv[2];
-const COORDINATOR_URL = process.argv[3];
-const PUBLIC_URL = process.argv[4];
-const PULSE_INTERVAL = 2000;
-
-if (!PORT || !COORDINATOR_URL || !PUBLIC_URL) {
-    console.error("❌ Uso: node worker.js <PORT> <COORDINATOR_URL> <PUBLIC_URL>");
-    process.exit(1);
-}
-
+// --- ESTADO DEL WORKER ---
 const id = crypto.randomUUID();
-let coordinatorStatus = "Desconectado";
-let lastHeartbeatTime = null;
+let COORDINATOR_URL = null;
+let PUBLIC_URL = null;
+const PULSE_INTERVAL = 2000; // 2 segundos
+let pulseTimer = null;
 
-// --- SISTEMA DE LOGS EN MEMORIA ---
-// Guardamos los últimos 50 mensajes para enviarlos al frontend
+let workerState = {
+    status: "stopped",
+    coordinatorStatus: "Desconectado",
+    lastHeartbeat: null
+};
+
+// --- LOGS EN MEMORIA ---
 const systemLogs = [];
 const errorLogs = [];
 
@@ -29,31 +27,30 @@ function logEvent(message, isError = false) {
     const timestamp = new Date().toLocaleTimeString();
     const logEntry = { timestamp, message };
     
-    // Mostrar en la terminal real
-    if (isError) console.error(`[${timestamp}] ❌ ${message}`);
-    else console.log(`[${timestamp}] ℹ️ ${message}`);
-
-    // Guardar en memoria para el frontend
     if (isError) {
-        errorLogs.unshift(logEntry); // Agregar al principio
+        console.error(`[${timestamp}] ❌ ${message}`);
+        errorLogs.unshift(logEntry);
+    } else {
+        console.log(`[${timestamp}] ℹ️ ${message}`);
     }
-    systemLogs.unshift(logEntry); // Agregar al principio (Log general)
+    systemLogs.unshift(logEntry);
     
-    // Limitar historial a 50 items para no llenar la memoria
     if (systemLogs.length > 50) systemLogs.pop();
     if (errorLogs.length > 50) errorLogs.pop();
 }
 
 app.use(cors());
 app.use(express.json());
-// Servir archivos estáticos (HTML y CSS) desde la carpeta "public"
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- LÓGICA DE CONEXIÓN ---
-
+// --- LÓGICA DE NEGOCIO ---
 async function register() {
+    if (!COORDINATOR_URL) return;
+    
+    workerState.status = "registering";
+    logEvent(`Registrando en ${COORDINATOR_URL}...`);
+
     try {
-        logEvent(`Intentando registrar en ${COORDINATOR_URL}...`);
         const response = await fetch(`${COORDINATOR_URL}/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -61,19 +58,29 @@ async function register() {
         });
 
         if (response.ok) {
-            logEvent("✅ Registro exitoso en el Coordinador");
-            coordinatorStatus = "Conectado";
+            logEvent("✅ Registro exitoso. Iniciando pulsos.");
+            workerState.status = "active";
+            workerState.coordinatorStatus = "Conectado";
+            
+            if (!pulseTimer) {
+                pulseTimer = setInterval(sendPulse, PULSE_INTERVAL);
+            }
         } else {
             throw new Error(`Status ${response.status}`);
         }
     } catch (error) {
         logEvent(`Fallo al registrar: ${error.message}`, true);
-        coordinatorStatus = "Error de Registro";
-        setTimeout(register, 5000);
+        workerState.status = "error";
+        workerState.coordinatorStatus = "Error Registro";
+        setTimeout(() => {
+            if (COORDINATOR_URL) register();
+        }, 5000);
     }
 }
 
 async function sendPulse() {
+    if (!COORDINATOR_URL) return;
+
     try {
         const response = await fetch(`${COORDINATOR_URL}/pulse`, {
             method: "POST",
@@ -82,47 +89,69 @@ async function sendPulse() {
         });
 
         if (response.ok) {
-            lastHeartbeatTime = Date.now();
-            coordinatorStatus = "Conectado";
-            logEvent("💓 Pulso (Heartbeat) enviado correctamente");
+            workerState.lastHeartbeat = Date.now();
+            workerState.coordinatorStatus = "Conectado";
+            workerState.status = "active";
+            logEvent("💓 Pulso enviado");
         } else {
             if (response.status === 404) {
-                logEvent("⚠️ Coordinador no nos reconoce. Re-registrando...", true);
-                await register();
+                logEvent("⚠️ Coordinador reiniciado. Re-registrando...", true);
+                clearInterval(pulseTimer);
+                pulseTimer = null;
+                register();
             } else {
                 throw new Error(`Status ${response.status}`);
             }
         }
     } catch (error) {
-        logEvent(`Error enviando pulso: ${error.message}`, true);
-        coordinatorStatus = "Error de Conexión";
+        logEvent(`Error pulso: ${error.message}`, true);
+        workerState.coordinatorStatus = "Error Conexión";
     }
 }
 
-// --- ENDPOINTS ---
+// --- ENDPOINTS API ---
+
+app.post("/connect", async (req, res) => {
+    const { coordinatorUrl, publicUrl } = req.body;
+    if (!coordinatorUrl || !publicUrl) return res.status(400).json({ error: "Faltan URLs" });
+
+    if (pulseTimer) clearInterval(pulseTimer);
+    
+    COORDINATOR_URL = coordinatorUrl;
+    PUBLIC_URL = publicUrl;
+    
+    logEvent(`🔧 Configuración aplicada.`);
+    register();
+    res.json({ message: "Iniciando..." });
+});
+
+app.post("/disconnect", (req, res) => {
+    if (pulseTimer) clearInterval(pulseTimer);
+    pulseTimer = null;
+    COORDINATOR_URL = null;
+    workerState.status = "stopped";
+    workerState.coordinatorStatus = "Desconectado";
+    logEvent("🛑 Worker detenido manualmente.");
+    res.json({ message: "Detenido" });
+});
 
 app.get("/status", (req, res) => {
     res.json({
-        worker_id: id,
+        // Datos planos para facilitar acceso
+        id,
         port: PORT,
         public_url: PUBLIC_URL,
-        pulse_interval_ms: PULSE_INTERVAL,
-        current_timestamp: Date.now(),
-        coordinator: {
-            url: COORDINATOR_URL,
-            status: coordinatorStatus,
-            last_heartbeat_sent: lastHeartbeatTime
-        },
-        logs: systemLogs,  // Enviamos los logs
-        errors: errorLogs  // Enviamos los errores
+        coordinator_url: COORDINATOR_URL,
+        pulse_interval: PULSE_INTERVAL,    // <--- Esto arregla el "undefined ms"
+        current_timestamp: Date.now(),     // <--- Esto arregla el "Invalid Date"
+        
+        // Objetos complejos
+        state: workerState,
+        logs: systemLogs,
+        errors: errorLogs
     });
 });
 
-// --- INICIO ---
-app.listen(PORT, async () => {
-    logEvent(`🚀 Worker iniciado en puerto ${PORT}`);
-    setTimeout(async () => {
-        await register();
-        setInterval(sendPulse, PULSE_INTERVAL);
-    }, 1000);
+app.listen(PORT, () => {
+    console.log(`🚀 Worker Server UI disponible en http://localhost:${PORT}`);
 });
